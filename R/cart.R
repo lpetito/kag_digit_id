@@ -79,7 +79,7 @@ subset.x<-x.learn[,names(tab)]
 data.prac<-cbind(y.learn, subset.x)
 fit<-rpart(y.learn~., data.prac, method="class")
 y.pred.fit<-predict(fit, x.test[,names(tab)], type="class")
-
+rpart.plot(fit)
 diff.fit<-as.numeric(prediction)-1 - y.test
 length(which(diff.fit==0))/1000
 prop.acc<-apply(as.matrix(1:dim(prediction)[2]), 1, FUN = function(x){
@@ -87,3 +87,34 @@ prop.acc<-apply(as.matrix(1:dim(prediction)[2]), 1, FUN = function(x){
 
 #Splits
 base$splits[base$splits[,1]!=0,]
+
+splits.min<-apply(as.matrix(seq(20,300, by=20)),1,FUN=function(x){
+  temp<-rpart(label~., learn, method="class", control=rpart.control(minsplit=x))$splits
+  temp.out<-temp[temp[,1]!=0,]
+  k<-unique(temp.out[,1])
+  temp.out.2<-apply(as.matrix(seq(1, length(k), by=1)), 1, FUN=function(x){
+    names(which(temp.out[,1]==k[x]))[1]
+  })
+  return(temp.out.2)
+})
+num.splits.min<-unlist(lapply(splits.min, length))
+table(unlist(splits.min))
+table(unlist(splits.min))[order(table(unlist(splits.min)))]
+
+splits.cp<-apply(as.matrix(seq(0,0.085, by=.005)),1,FUN=function(x){
+  temp<-rpart(label~., learn, method="class", control=rpart.control(cp=x))$splits
+  temp.out<-temp[temp[,1]!=0,]
+  k<-unique(temp.out[,1])
+  temp.out.2<-apply(as.matrix(seq(1, length(k), by=1)), 1, FUN=function(x){
+    names(which(temp.out[,1]==k[x]))[1]
+  })
+  return(temp.out.2)
+})
+num.splits.cp<-unlist(lapply(splits.cp, length))
+as.matrix(table(unlist(splits.cp))[order(table(unlist(splits.cp)))], nrow=5)
+
+par(mfrow=c(1,2))
+plot(seq(20,300, by=20), num.splits.min, main="Number of Splits for Varying MinSplit Values",
+     ylab="Number of Splits", xlab="Minimum Observations in Node for Split", type="p", pch=15)
+plot(seq(0,0.085, by=.005), num.splits.cp, main="Number of Splits for Varying CP Values",
+     ylab="Number of Splits", xlab="CP", type="p", pch=15)
